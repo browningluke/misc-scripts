@@ -64,15 +64,35 @@ class Client:
         else:
             return True
 
-hb_json = requests.get("https://hr-humblebundle.appspot.com/androidapp/v2/service_check").json()
 
-for i in hb_json:
-	print(i['url'])
-	hb = Scraper(i['url'])
+def humble():
+	hb_json = requests.get("https://hr-humblebundle.appspot.com/androidapp/v2/service_check").json()
 
-	embed=discord.Embed(title="{}".format(i['bundle_name']), url="{}".format(i['url']), description="{}".format(hb.getDescription()))
-	embed.set_thumbnail(url="{}".format(hb.getLogo()))
-	embed.add_field(name="Expires in:", value="{} Days, {} Hours".format(hb.getDaysLeft(), hb.getHoursLeft()), inline=False)
-	webhook = Client('https://discordapp.com/api/webhooks/469032302832517131/8BP8fktZhfSUG86Uf3h66OYj2ceAQ2d8FcuKztifO_OTc0sPvXJt2v1vv19neFlIaneN',
-		embed=embed.to_dict())
-	webhook.send()
+	for i in hb_json:
+		if i['bundle_machine_name'] in open('bundles.log'):
+			print("Bundle already posted")
+		else:
+			print(i['url'])
+			hb = Scraper(i['url'])
+
+			embed=discord.Embed(title="{}".format(i['bundle_name']), url="{}".format(i['url']), description="{}".format(hb.getDescription()))
+			embed.set_thumbnail(url="{}".format(hb.getLogo()))
+			embed.add_field(name="Time Left:", value="{} Days, {} Hours".format(hb.getDaysLeft(), hb.getHoursLeft()), inline=False)
+			webhook = Client('https://discordapp.com/api/webhooks/469032302832517131/8BP8fktZhfSUG86Uf3h66OYj2ceAQ2d8FcuKztifO_OTc0sPvXJt2v1vv19neFlIaneN',
+				embed=embed.to_dict())
+			webhook.send()
+
+			with open('bundles.log', 'w+') as f:
+				f.write(i['bundle_machine_name'])
+				f.close()
+
+
+# Run at 12:30EST (4:30UTC)
+schedule.every().day.at("16:30").do(humble)
+
+try:
+	while True:
+		schedule.run_pending()
+		time.sleep(1)	
+except KeyboardInterrupt:
+	pass

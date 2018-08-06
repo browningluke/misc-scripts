@@ -29,23 +29,38 @@ class Client:
 
 def chrono():
 	ch_json = requests.get("https://api.chrono.gg/sale").json()
-	game_id = dict(list(ch_json['items'])[0])['id']
-	st_json = requests.get("https://store.steampowered.com/api/appdetails?appids={}".format(game_id)).json()
-	description = st_json[game_id]['data']['short_description']
+	
+	# Ensure chrono API has pulled correctly
+	try:
+		game_id = dict(list(ch_json['items'])[0])['id']
+	except KeyError as e:
+		print("CHRONO API ERROR: game_id not found. {}".format(e))
+		game_id = None
 
-	embed=discord.Embed(title="{}".format(ch_json['name']), url="{}".format(ch_json['unique_url']), description=description)
-	embed.set_thumbnail(url="{}".format(ch_json['og_image']))
-	embed.add_field(name="Sale Price", value="${}".format(ch_json['sale_price']), inline=True)
-	embed.add_field(name="Discount", value="{}".format(ch_json['discount']), inline=True)
-	embed.add_field(name="Normal Price", value="${}".format(ch_json['normal_price']), inline=True)
-	embed.set_footer(text="{}".format(ch_json['steam_url']))
+	if game_id is not None:
+		st_json = requests.get("https://store.steampowered.com/api/appdetails?appids={}".format(game_id)).json()
 
-	webhook = Client('https://discordapp.com/api/webhooks/469032213930049558/VINTvU7qIJ3int-UR2LLPqsxIemCxUhkb4V-sLnUP1rhHCMyJ_BL0oBCdrc4QuZrjWW4',
-		embed=embed.to_dict())
+		try:
+			description = st_json[game_id]['data']['short_description']
 
-	webhook.send()
+		except KeyError as e:
+			print("STEAM API ERROR: description not found. {}".format(e))
+			description = "Description could not be found."
 
-schedule.every().day.at("12:30").do(chrono)
+		embed=discord.Embed(title="{}".format(ch_json['name']), url="{}".format(ch_json['unique_url']), description=description)
+		embed.set_thumbnail(url="{}".format(ch_json['og_image']))
+		embed.add_field(name="Sale Price", value="${}".format(ch_json['sale_price']), inline=True)
+		embed.add_field(name="Discount", value="{}".format(ch_json['discount']), inline=True)
+		embed.add_field(name="Normal Price", value="${}".format(ch_json['normal_price']), inline=True)
+		embed.set_footer(text="{}".format(ch_json['steam_url']))
+
+
+		webhook = Client('https://discordapp.com/api/webhooks/469032213930049558/VINTvU7qIJ3int-UR2LLPqsxIemCxUhkb4V-sLnUP1rhHCMyJ_BL0oBCdrc4QuZrjWW4',
+			embed=embed.to_dict())
+		webhook.send()
+
+# Run at 12:30EST (4:30UTC)
+schedule.every().day.at("16:30").do(chrono)
 
 try:
 	while True:

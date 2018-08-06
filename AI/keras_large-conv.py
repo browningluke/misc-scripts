@@ -52,11 +52,15 @@ scores = model.evaluate(X_test, y_test, verbose=0)
 print("Large CNN Error: %.2f%%" % (100-scores[1]*100))
 
 from PIL import Image
-img = Image.open('two.png').convert('L')
+img = Image.open('nine.png').convert('L')
 arr = numpy.array(img)
 print(arr.shape)
 arr = arr.reshape(1, 1, 28, 28).astype('float32')
 print(arr.shape)
+
+# ALWAYS NORMALIZE YOUR INPUTS YOU FUCKER
+# THIS IS WHY IT WAS GIVING ERRORS
+arr /= 255
 
 for x in range(0,3):
     prediction = model.predict(arr, verbose=2)[0]
