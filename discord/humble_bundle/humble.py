@@ -3,15 +3,23 @@ from selenium import webdriver
 import requests
 import discord
 import time
+import schedule
+import os
+from configparser import ConfigParser
+from time import gmtime, strftime
 
 class Scraper:
 
 	def __init__(self, url, **kwargs):
+		# Comment these lines
 		self.options = webdriver.ChromeOptions()
 		self.options.add_argument('headless')
-		
+		self.options.add_argument("disable-gpu")
 		self.browser = webdriver.Chrome(chrome_options=self.options)
-		self.browser.get('https://www.humblebundle.com/games/cigames-bundle')
+		# And uncomment this line to debug
+		#self.browser = webdriver.Chrome()
+
+		self.browser.get(url)
 		time.sleep(1)
 		self.html = self.browser.page_source
 		self.browser.quit()
@@ -21,24 +29,29 @@ class Scraper:
 
 	def getLogo(self):
 		logo = self.soup.find('div', class_="hero-section-logo")
-		logo_url = logo["style"].split("'")[1]
-		return logo_url
+		try:
+			logo_url = logo["style"].split("'")[1]
+			return logo_url
+		except TypeError:
+			return None
 
 	def getDescription(self):
-		desc = self.soup.find('p', class_="detailed-marketing-blurb")
+		fore = self.soup.find('div', class_="hero-foreground")
+		desc = fore.find('p', class_="detailed-marketing-blurb")
+		#print(desc)
 		return desc.text.strip()
 
 	def getDaysLeft(self):
 		t_days = self.soup.find('span', class_="js-days timer-field")
 		
-		print(t_days)
+		#print(t_days)
 
 		t_days_formatted = t_days.text.strip().split(' ')[0]
 		return t_days_formatted
 
 	def getHoursLeft(self):
 		t_hrs = self.soup.find('span', class_="js-hours timer-field")
-		print(t_hrs)
+		#print(t_hrs)
 		return t_hrs.text.strip()
 
 class Client:
@@ -84,15 +97,16 @@ def humble():
 		if i['bundle_machine_name'] in open('bundles.log'):
 			print("Bundle already posted")
 		else:
-			print(i['url'])
 			hb = Scraper(i['url'])
 
 			embed=discord.Embed(title="{}".format(i['bundle_name']), url="{}".format(i['url']), description="{}".format(hb.getDescription()))
-			embed.set_thumbnail(url="{}".format(hb.getLogo()))
+			logo = hb.getLogo()
+			if logo is not None:
+				embed.set_thumbnail(url="{}".format(logo))
 			embed.add_field(name="Time Left:", value="{} Days, {} Hours".format(hb.getDaysLeft(), hb.getHoursLeft()), inline=False)
 			
-			url = load_url()
 
+			url = load_url()
 			if url is not None:
 				webhook = Client(url, embed=embed.to_dict())
 				webhook.send()
@@ -102,12 +116,14 @@ def humble():
 				print("Cannot find url. Skipping.")
 
 			with open('bundles.log', 'w+') as f:
-				f.write(i['bundle_machine_name'])
+				f.write("{}\n".format(i['bundle_machine_name']))
 				f.close()
 
 
 # Run at 12:30EST (4:30UTC)
 schedule.every().day.at("16:30").do(humble)
+
+humble()
 
 try:
 	while True:
