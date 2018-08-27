@@ -4,6 +4,7 @@ import schedule
 from time import gmtime, strftime, sleep
 import os
 from configparser import ConfigParser
+import re
 
 class Client:
 
@@ -29,7 +30,6 @@ class Client:
 			return True
 
 def load_url():
-
 	try:
 		with open("{}/{}".format(os.path.dirname(os.path.abspath(__file__)), "web_url.ini"), 'r+') as f:
 			_c = ConfigParser()
@@ -56,12 +56,15 @@ def chrono():
 
 		try:
 			description = st_json[game_id]['data']['short_description']
-
 		except KeyError as e:
 			print("STEAM API ERROR: description not found. {}".format(e))
 			description = "Description could not be found."
+		else:
+			# Description processing
+			if "<strong>" in description:
+				description = re.sub('<strong>|</strong>', "**", description)
 
-		embed=discord.Embed(title="{}".format(ch_json['name']), url="{}".format(ch_json['unique_url']), description=description)
+		embed=discord.Embed(title="{}".format(ch_json['name']), url="{}".format(ch_json['unique_url']), description=description, color=discord.Color(0x35194A))
 		embed.set_thumbnail(url="{}".format(ch_json['og_image']))
 		embed.add_field(name="Sale Price", value="${}".format(ch_json['sale_price']), inline=True)
 		embed.add_field(name="Discount", value="{}".format(ch_json['discount']), inline=True)
@@ -71,7 +74,7 @@ def chrono():
 		url = load_url()
 
 		if url is not None:
-			webhook = Client(url, embed=embed.to_dict())
+			webhook = Client(url, name="Chrono.gg", tts="false", embed=embed.to_dict())
 			webhook.send()
 
 			print("{}: Message successfully sent. Name: {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), ch_json['name']))
