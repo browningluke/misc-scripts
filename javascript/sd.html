@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Variance & Standard Deviation Calculator</title>
+	<meta charset="utf-8">
+	<link rel="icon" href="https://cdn1.iconfinder.com/data/icons/ringtone-music-instruments/512/sigma-symbol-greek-alphabet-letter-3-512.png" type="image/x-icon">
+
+<script type="text/javascript">
+	function sumArray(array){
+		var sum = 0;
+		for(var i = 0; i < array.length; i++){
+			sum += array[i];
+		}
+		return sum;
+	}
+
+	function calculate(){
+		databox = document.getElementById("databox");
+		dataset = databox.value.split(",");
+		dataset_formatted = [];
+
+		// Clean input
+		for (var i=0; i<dataset.length;i++){
+			var value = parseInt(dataset[i], 10);
+			if (!isNaN(value)){
+				dataset_formatted.push(value);
+			}
+		}
+
+		var sum = 0
+		for(var i = 0; i < dataset_formatted.length; i++){
+			sum += Math.pow((dataset_formatted[i]-(sumArray(dataset_formatted)/dataset_formatted.length)), 2);
+		}
+
+		var vari = sum/dataset_formatted.length;
+
+		document.getElementById("vari").innerHTML = "Variance (σ^2):" + vari;
+		document.getElementById("sd").innerHTML = "Standard Deviation (σ):" + Math.sqrt(vari);
+	}
+
+</script>
+
+</head>
+<body>
+
+<textarea id="databox" placeholder="Enter data separated with ','"></textarea>
+<button onclick="calculate();">Submit</button>
+
+<div>
+	<p id="vari">Variance (σ^2):</p>
+	<p id="sd">Standard Deviation (σ):</p>
+</div>
+
+
+</body>
+</html>

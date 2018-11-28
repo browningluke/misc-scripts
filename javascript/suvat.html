@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>SUVAT Calculator</title>
+	<script src="http://algebra.js.org/javascripts/algebra-0.2.6.min.js"></script>
+</head>
+<body>
+
+<div>
+	<p><input type="text" id="S_box" placeholder="S (displacement)">
+		S: <span id="disp">0 m</span></p>
+	<p><input type="text" id="U_box" placeholder="U (initial velocity)">
+		U: <span id="init">0 m/s</span></p>
+	<p><input type="text" id="V_box" placeholder="V (final velocity)">
+		V: <span id="final">0 m/s</span></p>
+	<p><input type="text" id="A_box" placeholder="A (Acceleration)">
+		A: <span id="accel">0 m/s²</span></p>
+	<p><input type="text" id="T_box" placeholder="T (Time)">
+		T: <span id="time">0 s</span></p>
+	<button onclick="handle_inputs();">Submit</button>
+	<span id="errors" style="color: red;"></span>
+</div>
+
+<script type="text/javascript">
+	e1 = algebra.parse("(u+a*t)-v=0");
+	e2 = algebra.parse("(0.5*(v+u)*t)-s=0");
+	e3 = algebra.parse("((u*t) + (0.5*a*t*t))-s=0");
+	e4 = algebra.parse("((u*u)+(2*a*s))-(v*v)=0");
+	equation_list = [e1, e2, e3, e4];
+
+	function solve(var_passed, boxes, value_dict) {
+		var ans_list = [];
+		//console.log(value_dict)
+		for (var i=0; i<equation_list.length; i++){
+			try {
+				ans = equation_list[i].eval(value_dict).solveFor(var_passed);	
+				ans_list.push(ans.toString());
+			} catch(e) {
+				//console.log(e);
+			}
+		}
+		return ans_list;
+	}
+
+	function handle_inputs() {
+		labels = {
+			"s": document.getElementById("disp"),
+			"u": document.getElementById("init"),
+			"v": document.getElementById("final"),
+			"a": document.getElementById("accel"),
+			"t": document.getElementById("time"),
+			"errors": document.getElementById("errors")
+		};
+
+		boxes = {
+			"s": document.getElementById("S_box"),
+			"u": document.getElementById("U_box"),
+			"v": document.getElementById("V_box"),
+			"a": document.getElementById("A_box"),
+			"t": document.getElementById("T_box")
+		}
+
+		var values = ["s", "u", "v", "a", "t"];
+		var units = {
+			"s": "m", 
+			"u": "m/s", 
+			"v": "m/s",
+			"a": "m/s²",
+			"t": "s"};
+		var value_dict = {};
+		var missing_values = [];
+		
+		for (let i=0; i<values.length; i++) {
+			labels[values[i]].style.color = "black";
+
+			if (boxes[values[i]].value != "") {
+				value_dict[values[i]] = parseInt(boxes[values[i]].value, 10);
+				labels[values[i]].innerHTML = boxes[values[i]].value + " " + units[values[i]];
+			} else {
+				missing_values.push(values[i]);
+			}
+		}
+
+		if (Object.keys(value_dict).length<3) {
+			labels["errors"].innerHTML = "Please enter three or more values.";
+			return false;
+		} else {
+			labels["errors"].innerHTML = "";
+		}
+		
+		for (var i = 0; i<missing_values.length; i++){
+			var ans_list = solve(missing_values[i], boxes, value_dict);
+			console.log(missing_values[i], ans_list);
+			var answer = "Error";
+
+			// Check for variable in answer
+			for (var x=0; x<ans_list.length; x++) {				
+				if (!/[suvat]/.test(ans_list[x])) {
+					answer = ans_list[x];
+					break;
+				}
+			}
+
+			// Add answer to list of known values
+			value_dict[missing_values[i]] = algebra.parse(answer);
+			
+			// Update labels
+			console.log(missing_values[i] + ": " + answer);
+			labels[missing_values[i]].innerHTML = eval(answer) + " " + units[missing_values[i]];
+			labels[missing_values[i]].style.color = "red";
+		}
+	}
+</script>
+</body>
+</html>

@@ -1,6 +1,16 @@
-# PythonScripts
+# Scripts
 
 ### A repo for small miscellaneous  scripts.
+
+
+
+#### Languages:
+
+- Python
+
+- HTML5 (JS)
+
+- Lua (Computercraft)
 
 
 

@@ -1,0 +1,78 @@
+<canvas id="canvas" width="900" height="900">
+</canvas>
+
+<script type="text/javascript">
+	window.onload=function() {
+		canv = document.getElementById('canvas');
+	 	ctx = canv.getContext('2d');
+	 	document.addEventListener("keydown", keyPush);
+	 	setInterval(game, 1000/15)
+	}
+
+px=py=10;
+gs=tc=30;
+ax=ay=15;
+xv=yv=0;
+trail = [];
+tail = 5;
+
+	function game(){
+		px+=xv;
+		py+=yv;
+
+		if (py>tc){
+			py=0;
+		}
+
+		if (py<0){
+			py=tc;
+		}
+
+		if (px>tc){
+			px=0;
+		}
+
+		if (px<0){
+			px=tc;
+		}
+
+		trail.push({x:px, y:py});
+		while(trail.length>tail){
+			trail.shift();
+		}
+
+		if (py == ay && px == ax){
+			tail++;
+			ax=Math.floor(Math.random()*tc)
+			ay=Math.floor(Math.random()*tc)
+		}
+
+		ctx.fillStyle="black";
+		ctx.fillRect(0,0,canv.width,canv.height)
+
+		ctx.fillStyle="lime";
+	    for(var i=0;i<trail.length;i++) {
+	        ctx.fillRect(trail[i].x*gs,trail[i].y*gs,gs-2,gs-2);
+	    }
+		ctx.fillStyle="red";
+		ctx.fillRect(ax*gs,ay*gs, gs-2, gs-2)
+	}
+
+	function keyPush(evt){
+		switch (evt.keyCode) {
+			case 37:
+				xv=-1;yv=0;
+				break
+			case 38:
+				xv=0;yv=-1;
+				break
+			case 39:
+				xv=1;yv=0;
+				break
+			case 40:
+				xv=0;yv=1;
+				break
+		}
+	}
+
+</script>
