@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Snake</title>
+</head>
+
+<body>
+	<canvas id="canvas" width="800"></canvas>
+
+</body>
+
+<script type="text/javascript">
+	var maxtimeout=timeout= 1000/10
+	var mintimeout = 50
+	
+	function loop() {
+		game();
+		setTimeout(loop, timeout)
+	}
+	window.onload = function() {
+		canvas = document.getElementById("canvas");
+		canvas.height = canvas.width;
+		ctx = canvas.getContext("2d");
+		
+		document.addEventListener("keydown", KeyPress);
+		loop();
+	}
+
+	ax=ay=15;
+	gx=gy=20;
+	xv=yv=0;
+	px=py=10;
+	// Scale factor in relation to 400x400
+	sf=document.getElementById("canvas").width/Math.pow(gx, 2);
+
+	tail = 5;
+	trail = [];
+
+	function game() {
+		// Handle movement
+		px += xv;
+		py += yv;
+		px = Math.floor(px);
+		py = Math.floor(py);
+
+		// Wraping around the screen
+		if (px>=(gx*sf)){
+			px=0;
+		}
+		if (px<=-1){
+			px=(gx*sf);
+		}
+		if (py>=(gy*sf)){
+			py=0;
+		}
+		if (py<=-1){
+			py=(gy*sf);
+		}
+
+		// Eating the apple
+		if (px == ax && py == ay){
+			tail++;
+			if (timeout > mintimeout) {timeout--;}
+			ax = Math.floor(Math.random()*(gx*sf));
+			ay = Math.floor(Math.random()*(gy*sf));
+		}
+
+		ctx.fillStyle = "#fef2e6";
+		ctx.fillRect(0,0,canvas.width, canvas.height);
+
+		ctx.fillStyle = "#b3a8a0";
+		ctx.fillRect(px*gx, py*gy, gx-2, gy-2);
+
+		for (let i =0; i<trail.length; i++) {
+			ctx.fillRect(trail[i].x*gx, trail[i].y*gy, gx-2, gy-2);
+
+			if (ax == trail[i].x && ay == trail[i].y) {
+				ax = Math.floor(Math.random()*(gx*sf));
+				ay = Math.floor(Math.random()*(gy*sf));
+			}
+
+			if (px == trail[i].x && py == trail[i].y) {
+				tail = 5;
+				trail = [];
+				timeout = maxtimeout;
+			}
+
+		}
+
+		ctx.fillStyle = "brown";
+		ctx.fillRect(ax*gx, ay*gy, gx-2, gy-2)
+
+		trail.push({"x": px, "y": py});
+
+		if (trail.length > tail) {
+			trail.shift();
+		}
+
+		ctx.font = "16px Georgia";
+		ctx.fillStyle = "brown";
+		ctx.fillText("Chocolate Chips: " + (tail-5),5,15);
+	}
+
+	function KeyPress(evt) {
+		switch (evt.keyCode) {
+			case 37:
+				if (xv!=1){
+					xv=-1;yv=0;
+				}
+				break;
+			case 38:
+				if (yv!=1){
+					xv=0;yv=-1;
+				}
+				break;
+			case 39:
+				if (xv!=-1){
+					xv=1;yv=0;
+				}
+				break;
+			case 40:
+				if (yv!=-1){
+					xv=0;yv=1;
+				}
+				break;
+			case 49:
+				xv=yv=0;
+				break;
+			
+			case 187:
+				tail++;
+				break;
+			case 189:
+				tail--;
+				trail.shift();
+				break;
+
+			case 219:
+				timeout++;
+				break;
+			case 221:
+				timeout--;
+		}
+	}
+
+</script>
+</html>
