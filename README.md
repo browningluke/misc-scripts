@@ -1,6 +1,6 @@
 # PythonScripts
 
-### A repo for small scripts I write.
+### A repo for small miscellaneous  scripts.
 
 
 
