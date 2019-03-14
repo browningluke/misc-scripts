@@ -29,32 +29,44 @@ class Client:
 		else:
 			return True
 
-def load_json():
-	try:
-		with open("{}/{}".format(os.path.dirname(os.path.abspath(__file__)), "config.json"), 'r+') as f:
-			_c = json.load(f)
-			f.close()
-		return _c
-	except (OSError, IOError) as e:
-		return None
-	except Exception as e:
-		raise e
+class Chrono:
 
-def chrono():
-	ch_json = requests.get("https://api.chrono.gg/sale").json()
-	
-	# Ensure chrono API has pulled correctly
-	try:
-		game_id = dict(list(ch_json['items'])[0])['id']
-	except KeyError as e:
-		print("CHRONO API ERROR: game_id not found. {}".format(e))
-		game_id = None
+	def __init__(self):
+		self.sale_url = "https://api.chrono.gg/sale"
+		self.steam_url = "https://store.steampowered.com/api/appdetails?appids={}"
 
-	if game_id is not None:
-		st_json = requests.get("https://store.steampowered.com/api/appdetails?appids={}".format(game_id)).json()
+		# Embed properties
+		self.name = "Chrono.gg"
+		self.tts = "false"
+		self.avatar_url = "https://pbs.twimg.com/profile_images/705158228959748096/OPCXSf4V_400x400.jpg"
+
+
+	@staticmethod
+	def load_json():
+		try:
+			with open("{}/{}".format(os.path.dirname(os.path.abspath(__file__)), "config.json"), 'r+') as f:
+				_c = json.load(f)
+				f.close()
+			return _c
+		except (OSError, IOError) as e:
+			return None
+		except Exception as e:
+			raise e
+
+	def get_sale(self):
+		chrono_json = requests.get(self.sale_url).json()
+		
+		# Ensure chrono API has pulled correctly
+		try:
+			game_id = dict(list(chrono_json['items'])[0])['id']
+		except KeyError as e:
+			print("CHRONO API ERROR: game_id not found. {}".format(e))
+			return None
+
+		steam_json = requests.get(self.steam_url.format(game_id)).json()
 
 		try:
-			description = st_json[game_id]['data']['short_description']
+			description = steam_json[game_id]['data']['short_description']
 		except KeyError as e:
 			print("STEAM API ERROR: description not found. {}".format(e))
 			description = "Description could not be found."
@@ -62,57 +74,82 @@ def chrono():
 			# Description processing
 			if "<strong>" in description:
 				description = re.sub('<strong>|</strong>', "**", description)
+			if "&quot;" in description:
+				description = re.sub('&quot;', "'", description)
 
-		embed=discord.Embed(title="{}".format(ch_json['name']), url="{}".format(ch_json['unique_url']), description=description, color=discord.Color(0x35194A))
-		embed.set_thumbnail(url="{}".format(ch_json['og_image']))
-		embed.add_field(name="Sale Price", value="${}".format(ch_json['sale_price']), inline=True)
-		embed.add_field(name="Discount", value="{}".format(ch_json['discount']), inline=True)
-		embed.add_field(name="Normal Price", value="${}".format(ch_json['normal_price']), inline=True)
-		embed.set_footer(text="{}".format(ch_json['steam_url']))
+		embed=discord.Embed(title="{}".format(chrono_json['name']), url="{}".format(chrono_json['unique_url']), description=description, color=discord.Color(0x420677))
+		
+		embed.set_image(url="{}".format(chrono_json['promo_image']))
+		embed.set_thumbnail(url=self.avatar_url)
+		
+		embed.add_field(name="Sale Price", value="${}".format(chrono_json['sale_price']), inline=True)
+		embed.add_field(name="Discount", value="{}".format(chrono_json['discount']), inline=True)
+		embed.add_field(name="Normal Price", value="${}".format(chrono_json['normal_price']), inline=True)
+		embed.add_field(name="Rating", value="[{}]({})".format(steam_json[game_id]["data"]["metacritic"]["score"], steam_json[game_id]["data"]["metacritic"]["url"]), inline=True)
+		
+		embed.set_footer(text="({}/{}) | {}".format("{}", "{}", chrono_json['steam_url']))
 
-		config = load_json()
+		return embed
 
+	def get_coins(self):
+		config = self.load_json()
+
+		success = 0
+		total = 0
+
+		for x in config['jwt']:
+			res = requests.get("https://api.chrono.gg/quest/spin", headers={'Authorization': 'JWT {}'.format(x["token"])})
+
+			if res.status_code == 420:
+				print("Coins already collected")
+			
+			elif res.status_code == 200:
+				res_json = res.json()
+				
+				print("Coins collected: {}".format(res_json['quest']['value'] + res_json['quest']['bonus']))
+				
+				if res_json["chest"] != {}:
+					print("Bonus chest: {} coins for a {} day streak.".format(res_json['chest']['base'] + res_json['chest']['bonus'], res_json['chest']['kind']))
+				
+				#print("Json:", res_json)
+
+				success += 1
+			
+			elif res.status_code == 401:
+				print("Status code 401: Unauthorised. Check your jwt. ({})".format(x["name"]))
+			else: 
+				print("Coin error: status code = {}".format(res.status_code))
+
+			total += 1
+
+		return success, total
+
+	def run_check(self):
+		embed = self.get_sale()
+		coins_success, coins_total = self.get_coins()
+		
+		if embed is None:
+			return None
+		
+		embed.set_footer(text = embed.footer.text.format(coins_success, coins_total))
+		config = self.load_json()
+		
 		if config['url'] is not None:
-			webhook = Client(config['url'], name="Chrono.gg", tts="false", embed=embed.to_dict())
+			webhook = Client(config['url'], name=self.name, tts=self.tts, embed=embed.to_dict(), avatar_url=self.avatar_url)
 			webhook.send()
 
-			print("{}: Message successfully sent. Name: {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), ch_json['name']))
+			print("{}: Message successfully sent. Name: {}".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), embed.title))
 		else:
 			print("Cannot find url. Skipping.")
 
-def coin():
-	config = load_json()
-
-	for x in config['jwt']:
-		res = requests.get("https://api.chrono.gg/quest/spin", headers={'Authorization': 'JWT {}'.format(x)})
-
-		if res.status_code == 420:
-			print("Coins already collected")
-		
-		elif res.status_code == 200:
-			res_json = res.json()
-			
-			print("Coins collected: {}".format(res_json['quest']['value'] + res_json['quest']['bonus']))
-			
-			if res_json["chest"] != {}:
-				print("Bonus chest: {} coins for a {} day streak.".format(res_json['chest']['base'] + res_json['chest']['bonus'], res_json['chest']['kind']))
-			
-			#print("Json:", res_json)
-		
-		elif res.status_code == 401:
-			print("Status code 401: Unauthorised. Check your jwt. {}".format(x))
-		else: 
-			print("Coin error: status code = {}".format(res.status_code))
-
-# Run at 12:30EST (4:30UTC)
-schedule.every().day.at("17:30").do(chrono)
-schedule.every().day.at("17:30").do(coin)
-
 
 def main():
-	chrono()
-	coin()
-
+	chrono = Chrono()
+	
+	# Run at 12:30EST (4:30UTC)
+	schedule.every().day.at("17:30").do(chrono.run_check)
+	chrono.run_check()
+	
 	try:
 		while True:
 			schedule.run_pending()
