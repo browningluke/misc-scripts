@@ -85,7 +85,9 @@ class Chrono:
 		embed.add_field(name="Sale Price", value="${}".format(chrono_json['sale_price']), inline=True)
 		embed.add_field(name="Discount", value="{}".format(chrono_json['discount']), inline=True)
 		embed.add_field(name="Normal Price", value="${}".format(chrono_json['normal_price']), inline=True)
-		embed.add_field(name="Rating", value="[{}]({})".format(steam_json[game_id]["data"]["metacritic"]["score"], steam_json[game_id]["data"]["metacritic"]["url"]), inline=True)
+		
+		if "metacritic" in steam_json[game_id]["data"]:
+			embed.add_field(name="Rating", value="[{}]({})".format(steam_json[game_id]["data"]["metacritic"]["score"], steam_json[game_id]["data"]["metacritic"]["url"]), inline=True)
 		
 		embed.set_footer(text="({}/{}) | {}".format("{}", "{}", chrono_json['steam_url']))
 
